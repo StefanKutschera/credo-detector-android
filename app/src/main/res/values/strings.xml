@@ -133,7 +133,7 @@
 
     <!-- Launcher Activity -->
     <string name="launcher_text_logo">@string/app_name</string>
-    <string name="launcher_button_login">Login</string>
+    <string name="launcher_button_login">Start</string>
     <string name="launcher_button_register">Register</string>
     <string name="launcher_button_remember_password">Forgot Password</string>
     <string name="launcher_input_endpoint">Enter custom API Endpoint</string>

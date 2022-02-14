@@ -37,7 +37,7 @@ class DataManager private constructor(val context: Context) {
 
     companion object {
         const val TAG = "DataManager"
-        const val TRIM_PERIOD_HITS_DAYS = 10
+        const val TRIM_PERIOD_HITS_DAYS = 365
         const val TRIM_PERIOD_HITS = 1000 * 3600 * 24 * TRIM_PERIOD_HITS_DAYS
 
         fun getDefault(context: Context): DataManager {
@@ -151,7 +151,7 @@ class DataManager private constructor(val context: Context) {
         }
 
         val condition: PultusORMCondition = PultusORMCondition.Builder()
-                .eq("toSent", 1)
+                .eq("toSent", 2)
                 .build()
 
         val applicationContext = context.applicationContext

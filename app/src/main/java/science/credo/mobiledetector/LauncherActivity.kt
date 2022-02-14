@@ -83,7 +83,7 @@ class LauncherActivity : AppCompatActivity() {
             startActivityForResult(Intent(this@LauncherActivity, LoginActivity::class.java), REQUEST_SIGN)
             activate_email_message.visibility = View.GONE
         }
-
+        /*
         register_button.setOnClickListener {
             startActivityForResult(Intent(this@LauncherActivity, RegisterActivity::class.java), REQUEST_SIGN)
         }
@@ -93,7 +93,7 @@ class LauncherActivity : AppCompatActivity() {
             val href = "$endpoint/web/password_reset/"
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(href))
             startActivity(browserIntent)
-        }
+        }*/
 
         debug_mode_off_button.setOnClickListener {
             ConfigurationWrapper(this@LauncherActivity).endpoint = ConfigurationWrapper.defaultEndpoint

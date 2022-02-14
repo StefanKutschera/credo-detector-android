@@ -39,7 +39,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
         // Login
-        login_button.setOnClickListener { login() }
+        login()
+        /*login_button.setOnClickListener { login() }
 
         // Go to Forgot password Activity
         remember_password_button.setOnClickListener {
@@ -53,7 +54,7 @@ class LoginActivity : AppCompatActivity() {
         if (!pref.email.isBlank() && !pref.password.isBlank()) {
             email_input.setText(pref.email)
             password_input.setText(pref.password)
-        }
+        }*/
     }
 
     override fun onDestroy() {
@@ -65,10 +66,10 @@ class LoginActivity : AppCompatActivity() {
     fun login() {
         Log.d(TAG, "Login")
 
-        if (!validate()) {
+        /*if (!validate()) {
             onLoginFailed(0, getString(R.string.login_message_validation_failed))
             return
-        }
+        }*/
 
         login_button.isEnabled = false
 
@@ -82,7 +83,7 @@ class LoginActivity : AppCompatActivity() {
 
         val inputText = email_input.text.toString()
 
-        val loginRequest = if ('@' in inputText) {
+        /*val loginRequest = if ('@' in inputText) {
             LoginByEmailRequest.build(
                     inputText,
                     password_input.text.toString(),
@@ -94,14 +95,14 @@ class LoginActivity : AppCompatActivity() {
                     password_input.text.toString(),
                     info!!
             )
-        }
+        }*/
 
         val pref = UserInfoWrapper(this)
 
         loginTask = doAsync{
             try {
 
-                val response = ServerInterface.getDefault(baseContext).login(loginRequest)
+                /*val response = ServerInterface.getDefault(baseContext).login(loginRequest)
                 loginTask = null
                 uiThread {
                     if (!isClosed) {
@@ -114,7 +115,13 @@ class LoginActivity : AppCompatActivity() {
                         progressDialog.dismiss()
                         onLoginSuccess()
                     }
-                }
+                }*/
+                pref.login = "User"
+                pref.email = "email"
+                pref.token = "token"
+                pref.team = "team"
+                pref.displayName = "display_name"
+                onLoginSuccess()
             } catch (e: ServerException) {
                 Log.e(TAG, "Server error: ", e)
                 // TODO: support response from server i.e. login/email already exists, no connection etc.
@@ -158,7 +165,7 @@ class LoginActivity : AppCompatActivity() {
         error_text.text = msg
     }
 
-    private fun validate(): Boolean {
+    /*private fun validate(): Boolean {
         var valid = true
 
         val emailStr = email_input.text.toString()
@@ -185,7 +192,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         return valid
-    }
+    }*/
 
     companion object {
         private val TAG = "LoginActivity"

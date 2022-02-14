@@ -199,10 +199,10 @@ class MainActivity : AppCompatActivity(),
                 finish()
                 true
             }
-            R.id.action_account -> {
+           /* R.id.action_account -> {
                 startActivity(Intent(this@MainActivity, UserActivity::class.java))
                 true
-            }
+            }*/
             else -> super.onOptionsItemSelected(item)
         }
     }
