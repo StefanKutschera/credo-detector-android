@@ -141,7 +141,7 @@ class DataManager private constructor(val context: Context) {
                 .less("detectionTimestamp", threshold)
                 .build()
 
-        mDb.delete(Hit(), condition)
+//        mDb.delete(Hit(), condition) // Strange behavior that cache.db loses saved muons, trying to
     }
 
     fun sendHitsToNetwork(si: ServerInterface) {
@@ -151,7 +151,7 @@ class DataManager private constructor(val context: Context) {
         }
 
         val condition: PultusORMCondition = PultusORMCondition.Builder()
-                .eq("toSent", 2)
+                .eq("toSent", 2) // was 1, 2 does never match hence no Hit is sent
                 .build()
 
         val applicationContext = context.applicationContext

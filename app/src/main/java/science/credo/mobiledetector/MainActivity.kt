@@ -277,9 +277,9 @@ class MainActivity : AppCompatActivity(),
 
             try {
                 // TODO: detect internet connection and try flush when is
-                db.trimHitsDb()
+//                db.trimHitsDb()
                 db.sendHitsToNetwork(si)
-                db.flushCachedPings(si)
+//                db.flushCachedPings(si)
             } catch (e: Exception) {
                 Log.e(TAG, "Unable to sent to server", e)
             }
