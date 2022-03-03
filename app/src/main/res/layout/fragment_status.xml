@@ -191,7 +191,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/status_coordinates"
-                android:textSize="8pt" />
+                android:textSize="8pt"
+                android:visibility="gone"/>
 
             <TextView
                 android:id="@+id/coordinates_text"

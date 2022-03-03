@@ -25,7 +25,6 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
-import com.google.android.gms.location.*
 import com.instacart.library.truetime.TrueTime
 import kotlinx.android.synthetic.main.nav_header_status.*
 import kotlinx.android.synthetic.main.nav_header_status.view.*
@@ -71,13 +70,13 @@ class MainActivity : AppCompatActivity(),
 //    var mHitDataManager : HitDataManager? = null
 
     var mSettingsFlag = false;
-    val mReceiver: PowerConnectionReceiver = PowerConnectionReceiver()
+    //val mReceiver: PowerConnectionReceiver = PowerConnectionReceiver()
 
-    private var mFusedLocationClient: FusedLocationProviderClient? = null
-    private var mLocationRequest: LocationRequest? = null
-    private var mLocationSettingsRequest: LocationSettingsRequest? = null
-    private var mLocationCallback: LocationCallback? = null
-    private var mCurrentLocation: Location? = null
+    //private var mFusedLocationClient: FusedLocationProviderClient? = null
+    //private var mLocationRequest: LocationRequest? = null
+    //private var mLocationSettingsRequest: LocationSettingsRequest? = null
+    //private var mLocationCallback: LocationCallback? = null
+    //private var mCurrentLocation: Location? = null
 
     companion object {
         val TAG = "MainActivity"
@@ -155,10 +154,10 @@ class MainActivity : AppCompatActivity(),
             credoApplication().turnOnDetection(CredoApplication.DetectorMode.CHECK)
         }
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        createLocationCallback();
-        createLocationRequest();
-        buildLocationSettingsRequest();
+        //mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        //createLocationCallback();
+        //createLocationRequest();
+        //buildLocationSettingsRequest();
     }
 
     override fun onBackPressed() {
@@ -286,7 +285,7 @@ class MainActivity : AppCompatActivity(),
             db.closeDb()
         }
 
-        startLocationUpdates()
+        //startLocationUpdates()
     }
 
     override fun onPause() {
@@ -316,14 +315,14 @@ class MainActivity : AppCompatActivity(),
 
     private fun credoApplication() : CredoApplication = application as CredoApplication
 
-    private fun createLocationRequest() {
+    /*private fun createLocationRequest() {
         mLocationRequest = LocationRequest()
         mLocationRequest!!.interval = 60000
         mLocationRequest!!.fastestInterval = 10000
         mLocationRequest!!.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-    }
+    }*/
 
-    private fun createLocationCallback() {
+    /*private fun createLocationCallback() {
         val a = this
         val cw = ConfigurationWrapper(this)
         mLocationCallback = object : LocationCallback() {
@@ -347,15 +346,15 @@ class MainActivity : AppCompatActivity(),
                 EventBus.getDefault().post(UiUpdateEvent(0))
             }
         }
-    }
+    }*/
 
-    private fun buildLocationSettingsRequest() {
+    /*private fun buildLocationSettingsRequest() {
         val builder = LocationSettingsRequest.Builder()
         builder.addLocationRequest(mLocationRequest!!)
         mLocationSettingsRequest = builder.build()
-    }
+    }*/
 
-    private fun startLocationUpdates() {
+    /*private fun startLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -368,5 +367,5 @@ class MainActivity : AppCompatActivity(),
                 mLocationCallback,
                 Looper.getMainLooper())
         }
-    }
+    }*/
 }
