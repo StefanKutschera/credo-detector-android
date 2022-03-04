@@ -156,7 +156,6 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         val timeStampString = timestamp.toString()
                         //Information to store in the folder <timeStampString> on the moment of detection
                         retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
                         retreiveInformation("https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png", timeStampString)
                         retreiveInformation("https://services.swpc.noaa.gov/images/planetary-k-index.gif", timeStampString)
                         retreiveInformation("https://services.swpc.noaa.gov/images/swx-overview-large.gif", timeStampString)
