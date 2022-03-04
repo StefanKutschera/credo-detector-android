@@ -1,20 +1,14 @@
 package science.credo.mobiledetector
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.location.Location
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Looper
-import android.os.PowerManager
+import android.os.*
 import android.preference.PreferenceManager
 import android.provider.Settings
+import android.support.annotation.RequiresApi
 import android.support.design.widget.NavigationView
-import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
@@ -25,21 +19,21 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
-import com.instacart.library.truetime.TrueTime
 import kotlinx.android.synthetic.main.nav_header_status.*
 import kotlinx.android.synthetic.main.nav_header_status.view.*
-import org.greenrobot.eventbus.EventBus
 import org.jetbrains.anko.doAsync
 import science.credo.mobiledetector.database.ConfigurationWrapper
 import science.credo.mobiledetector.database.DataManager
 import science.credo.mobiledetector.database.DetectionStateWrapper
 import science.credo.mobiledetector.database.UserInfoWrapper
-import science.credo.mobiledetector.events.UiUpdateEvent
 import science.credo.mobiledetector.fragment.*
 import science.credo.mobiledetector.fragment.detections.DetectionContent
 import science.credo.mobiledetector.info.ConfigurationInfo
-import science.credo.mobiledetector.info.PowerConnectionReceiver
 import science.credo.mobiledetector.network.ServerInterface
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.channels.FileChannel
 import java.util.*
 
 
@@ -174,9 +168,13 @@ class MainActivity : AppCompatActivity(),
         // Inflate the menu; this adds items to the action bar if it is present.
         Log.d(TAG,"onCreateOptionsMenu")
         menuInflater.inflate(R.menu.main, menu)
+        if (!isExternalStorageAvailable() || isExternalStorageReadOnly()) {
+            menu.findItem(R.id.action_export).setEnabled(false);
+        }
         return true
     }
 
+    @RequiresApi(Build.VERSION_CODES.KITKAT)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         Log.d(TAG,"onOptionsItemSelected")
 
@@ -196,6 +194,43 @@ class MainActivity : AppCompatActivity(),
                 setResult(Activity.RESULT_OK)
                 ConfigurationWrapper(this).endpoint = ConfigurationWrapper.defaultEndpoint
                 finish()
+                true
+            }
+            R.id.action_export -> {
+                val db = DataManager.getDefault(this@MainActivity)
+                try {
+                    val sd = File(
+                        Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS
+                        ), "backup_db"
+                    )
+                    val data = db.mAppPath
+                    var bool = false
+                    if(!sd.exists()) {
+                        sd.mkdir()
+                    }
+                    if (sd.canWrite()) {
+                        val currentDBPath = "cache.db"
+                        val backupDBPath = "backup_db.txt"
+                        val currentDB = File(data, currentDBPath)
+                        val backupDB = File(sd, backupDBPath)
+                        if (currentDB.exists()) {
+                            val src: FileChannel = FileInputStream(currentDB).getChannel()
+                            val dst: FileChannel = FileOutputStream(backupDB).channel
+                            dst.transferFrom(src, 0, src.size())
+                            src.close()
+                            dst.close()
+                            bool = true
+                        }
+                        if (bool === true) {
+                            Toast.makeText(this, "Backup Complete", Toast.LENGTH_SHORT)
+                                .show()
+                            bool = false
+                        }
+                    }
+                } catch (e: java.lang.Exception) {
+                    Log.w("Settings Backup", e)
+                }
                 true
             }
            /* R.id.action_account -> {
@@ -368,4 +403,20 @@ class MainActivity : AppCompatActivity(),
                 Looper.getMainLooper())
         }
     }*/
+
+    fun isExternalStorageReadOnly() : Boolean {
+        val extStorageState = Environment.getExternalStorageState()
+        if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(extStorageState)) {
+            return true
+        }
+        return false
+    }
+
+    fun isExternalStorageAvailable() : Boolean {
+        val extStorageState = Environment.getExternalStorageState()
+        if (Environment.MEDIA_MOUNTED.equals(extStorageState)) {
+            return true
+        }
+        return false
+    }
 }

@@ -29,9 +29,9 @@ import java.util.*
  * @property context Android context object.
  */
 class DataManager private constructor(val context: Context) {
-    private val mAppPath: String = context.getFilesDir().getAbsolutePath()
+    public val mAppPath: String = context.getFilesDir().getAbsolutePath()
 
-    private val mDbFileName = "cache.db"
+    public val mDbFileName = "cache.db"
     private val mDbSchema = "4"
     private val mDb = PultusORM(mDbFileName, mAppPath)
 
