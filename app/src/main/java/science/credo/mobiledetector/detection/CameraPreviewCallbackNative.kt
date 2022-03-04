@@ -1,12 +1,18 @@
 package science.credo.mobiledetector.detection
 
+import android.app.DownloadManager
 import android.content.Context
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.hardware.Camera
+import android.net.Uri
+import android.os.Environment
 import android.util.Base64
 import android.util.Log
+import android.widget.Toast
 import com.instacart.library.truetime.TrueTime
 import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.uiThread
 import science.credo.mobiledetector.CredoApplication
 import science.credo.mobiledetector.database.ConfigurationWrapper
@@ -16,6 +22,7 @@ import science.credo.mobiledetector.info.ConfigurationInfo
 import science.credo.mobiledetector.info.LocationInfo
 import science.credo.mobiledetector.network.ServerInterface
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -144,6 +151,21 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         val cropDataPNG = bitmap2png(cropBitmap)
                         val dataString = Base64.encodeToString(cropDataPNG, Base64.DEFAULT)
                         val location = mLocationInfo.getLocationData()
+                        //--------------------------------------START---------------------------------------------------
+                        //Copy to CamerPreviewCallbackNative
+                        val timeStampString = timestamp.toString()
+                        //Information to store in the folder <timeStampString> on the moment of detection
+                        retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/images/planetary-k-index.gif", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/images/swx-overview-large.gif", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/text/solar-geophysical-event-reports.txt", timeStampString)
+                        retreiveInformation("https://services.swpc.noaa.gov/text/daily-geomagnetic-indices.txt", timeStampString)
+                        //--------------------------------------END-----------------------------------------------------
+                        //Copy to CamerPreviewCallbackNative
+
 
                         val hit = Hit(
                                 dataString,
@@ -218,6 +240,72 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
         }
         doAutoCallibrationIfNeed()
     }
+
+    //--------------------------------------START---------------------------------------------------
+    //Copy to CamerPreviewCallbackNative
+    var msg: String? = ""
+    var lastMsg = ""
+
+    private fun retreiveInformation(url: String, timeStampString: String) {
+
+        val directory = File(Environment.DIRECTORY_DOWNLOADS)
+
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val downloadManager = mContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+
+        val downloadUri = Uri.parse(url)
+        val filename = timeStampString + url.substring(url.lastIndexOf("gov") + 3).replace("/", "_")
+        val request = DownloadManager.Request(downloadUri).apply {
+            setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+                .setAllowedOverRoaming(false)
+                .setTitle(url.substring(url.lastIndexOf("gov") + 3))
+                .setDescription("")
+                .setDestinationInExternalPublicDir(
+                    directory.toString(),
+                    "/" + timeStampString+"/"+filename
+                )
+        }
+        val downloadId = downloadManager.enqueue(request)
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        Thread(Runnable {
+            var downloading = true
+            while (downloading) {
+                val cursor: Cursor = downloadManager.query(query)
+                cursor.moveToFirst()
+                if (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
+                    downloading = false
+                }
+                val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                msg = statusMessage(url, directory, status)
+                if (msg != lastMsg) {
+                    mContext.runOnUiThread {
+                        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                    }
+                    lastMsg = msg ?: ""
+                }
+                cursor.close()
+            }
+        }).start()
+    }
+    private fun statusMessage(url: String, directory: File, status: Int): String? {
+        var msg = ""
+        msg = when (status) {
+            DownloadManager.STATUS_FAILED -> "Download has been failed, please try again"
+            DownloadManager.STATUS_PAUSED -> "Paused"
+            DownloadManager.STATUS_PENDING -> "Pending"
+            DownloadManager.STATUS_RUNNING -> "Downloading..."
+            DownloadManager.STATUS_SUCCESSFUL -> "Image downloaded successfully in $directory" + File.separator + url.substring(
+                url.lastIndexOf("/") + 1
+            )
+            else -> "There's nothing to download"
+        }
+        return msg
+    }
+    //--------------------------------------END-----------------------------------------------------
+    //Copy to CamerPreviewCallbackNative
 
     private fun doAutoCallibrationIfNeed() {
         val cw = ConfigurationWrapper(mContext)

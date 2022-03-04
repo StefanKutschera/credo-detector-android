@@ -1,8 +1,10 @@
 package science.credo.mobiledetector
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.database.Cursor
 import android.net.Uri
 import android.os.*
 import android.preference.PreferenceManager
@@ -30,9 +32,12 @@ import science.credo.mobiledetector.fragment.*
 import science.credo.mobiledetector.fragment.detections.DetectionContent
 import science.credo.mobiledetector.info.ConfigurationInfo
 import science.credo.mobiledetector.network.ServerInterface
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.URL
+import java.nio.channels.Channels
 import java.nio.channels.FileChannel
 import java.util.*
 
@@ -173,6 +178,71 @@ class MainActivity : AppCompatActivity(),
         }
         return true
     }
+    //--------------------------------------START---------------------------------------------------
+    //Copy to CamerPreviewCallbackNative
+    var msg: String? = ""
+    var lastMsg = ""
+
+    private fun retreiveInformation(url: String, timeStampString: String) {
+
+        val directory = File(Environment.DIRECTORY_DOWNLOADS)
+
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val downloadManager = this.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+
+        val downloadUri = Uri.parse(url)
+        val filename = timeStampString + url.substring(url.lastIndexOf("gov") + 3).replace("/", "_")
+        val request = DownloadManager.Request(downloadUri).apply {
+            setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+                .setAllowedOverRoaming(false)
+                .setTitle(url.substring(url.lastIndexOf("gov") + 3))
+                .setDescription("")
+                .setDestinationInExternalPublicDir(
+                    directory.toString(),
+                    "/" + timeStampString+"/"+filename
+                )
+        }
+        val downloadId = downloadManager.enqueue(request)
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        Thread(Runnable {
+            var downloading = true
+            while (downloading) {
+                val cursor: Cursor = downloadManager.query(query)
+                cursor.moveToFirst()
+                if (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
+                    downloading = false
+                }
+                val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                msg = statusMessage(url, directory, status)
+                if (msg != lastMsg) {
+                    this.runOnUiThread {
+                        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                    }
+                    lastMsg = msg ?: ""
+                }
+                cursor.close()
+            }
+        }).start()
+    }
+    private fun statusMessage(url: String, directory: File, status: Int): String? {
+        var msg = ""
+        msg = when (status) {
+            DownloadManager.STATUS_FAILED -> "Download has been failed, please try again"
+            DownloadManager.STATUS_PAUSED -> "Paused"
+            DownloadManager.STATUS_PENDING -> "Pending"
+            DownloadManager.STATUS_RUNNING -> "Downloading..."
+            DownloadManager.STATUS_SUCCESSFUL -> "Image downloaded successfully in $directory" + File.separator + url.substring(
+                url.lastIndexOf("/") + 1
+            )
+            else -> "There's nothing to download"
+        }
+        return msg
+    }
+    //--------------------------------------END-----------------------------------------------------
+    //Copy to CamerPreviewCallbackNative
 
     @RequiresApi(Build.VERSION_CODES.KITKAT)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -197,6 +267,23 @@ class MainActivity : AppCompatActivity(),
                 true
             }
             R.id.action_export -> {
+               /* //--------------------------------------START---------------------------------------------------
+                //Copy to CamerPreviewCallbackNative
+                val timeStampString = "Stefan0123"
+                //Information to store in the folder <timeStampString> on the moment of detection
+                retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/images/planetary-k-index.gif", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/images/swx-overview-large.gif", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/text/solar-geophysical-event-reports.txt", timeStampString)
+                retreiveInformation("https://services.swpc.noaa.gov/text/daily-geomagnetic-indices.txt", timeStampString)
+
+
+                //--------------------------------------END-----------------------------------------------------
+                //Copy to CamerPreviewCallbackNative
+                */
                 val db = DataManager.getDefault(this@MainActivity)
                 try {
                     val sd = File(
