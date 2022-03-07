@@ -15,6 +15,7 @@ import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.uiThread
 import science.credo.mobiledetector.CredoApplication
+import science.credo.mobiledetector.MainActivity
 import science.credo.mobiledetector.database.ConfigurationWrapper
 import science.credo.mobiledetector.database.DataManager
 import science.credo.mobiledetector.database.DetectionStateWrapper
@@ -23,6 +24,9 @@ import science.credo.mobiledetector.info.LocationInfo
 import science.credo.mobiledetector.network.ServerInterface
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.channels.FileChannel
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -151,9 +155,17 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         val cropDataPNG = bitmap2png(cropBitmap)
                         val dataString = Base64.encodeToString(cropDataPNG, Base64.DEFAULT)
                         val location = mLocationInfo.getLocationData()
+
+                        val timeStampString = timestamp.toString()
+                        val directory = File(Environment.DIRECTORY_DOWNLOADS)
+                        val filepath = "/" + timeStampString + "/" + timeStampString + "_hit.png"
+                        val file = File(directory, filepath)
+                        val dst: FileOutputStream = FileOutputStream(file)
+                        cropBitmap.compress(Bitmap.CompressFormat.PNG, 100, dst)
+                        dst.flush();
+                        dst.close();
                         //--------------------------------------START---------------------------------------------------
                         //Copy to CamerPreviewCallbackNative
-                        val timeStampString = timestamp.toString()
                         //Information to store in the folder <timeStampString> on the moment of detection
                         retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
                         retreiveInformation("https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png", timeStampString)
