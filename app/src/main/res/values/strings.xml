@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">CREDO Detector</string>
-    <string name="app_name_short">Detector</string>
-    <string name="app_title">Cosmic-Ray Extremely Distributed Observatory (CREDO)</string>
-    <string name="app_description">The CREDO project is hunting for particle cascades from deep space in an effort to answer some of the fundamental questions about our Universe. Your particle detections will feed directly into this pioneering new area of scientific research. You can also engage in the analysis of the detections that you, your fellow citizen scientists and professional observatories from around the world are making though the Dark Universe Welcome experiment.</string>
-    <string name="app_homepage">To learn more please visit the CREDO website at:</string>
+    <string name="app_name">Muon RNG</string>
+    <string name="app_name_short">MRNG</string>
+    <string name="app_title">Muon Random Number Generator (MRNG)</string>
+    <string name="app_description"> This application is forked from the CREDO project which is hunting for particle cascades from deep space in an effort to answer some of the fundamental questions about our Universe. However, particle detections within this application are NOT feed directly into this pioneering new area of scientific research but stored locally and used to extract non-deterministic true randomness out of the measured muons.</string>
+    <string name="app_homepage"> </string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>

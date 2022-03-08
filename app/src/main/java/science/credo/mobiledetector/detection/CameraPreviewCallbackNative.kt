@@ -10,7 +10,9 @@ import android.os.Environment
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.instacart.library.truetime.TrueTime
+import org.acra.ACRA.init
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.uiThread
@@ -22,10 +24,7 @@ import science.credo.mobiledetector.database.DetectionStateWrapper
 import science.credo.mobiledetector.info.ConfigurationInfo
 import science.credo.mobiledetector.info.LocationInfo
 import science.credo.mobiledetector.network.ServerInterface
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
+import java.io.*
 import java.nio.channels.FileChannel
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -38,6 +37,7 @@ const val MAX_HITS_ONE_FRAME = 5
 class CameraPreviewCallbackNative(private val mContext: Context) : Camera.PreviewCallback {
     private val mServerInterface = ServerInterface.getDefault(mContext)
     private val mLocationInfo: LocationInfo = LocationInfo.getInstance(mContext)
+    private var wasErrourous: Boolean = false
 
 
     companion object {
@@ -57,7 +57,15 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
     override fun onPreviewFrame(data: ByteArray, hCamera: Camera) {
 
         val timestamp = System.currentTimeMillis()
-        val trueTime = TrueTime.now().time
+        var trueTime = 0L
+        if (!wasErrourous){
+            try {
+                trueTime = TrueTime.now().time
+            } catch (e: IllegalStateException){
+                wasErrourous=true
+                e.printStackTrace()
+            }
+        }
         if (timestamp / 1000 != lastFpsSecond) {
             lastFpsSecond = timestamp / 1000
             fps = lastFps
@@ -158,12 +166,22 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
 
                         val timeStampString = timestamp.toString()
                         val directory = File(Environment.DIRECTORY_DOWNLOADS)
+                        if (!directory.exists()) {
+                            directory.mkdirs()
+                        }
+
                         val filepath = "/" + timeStampString + "/" + timeStampString + "_hit.png"
                         val file = File(directory, filepath)
                         val dst: FileOutputStream = FileOutputStream(file)
                         cropBitmap.compress(Bitmap.CompressFormat.PNG, 100, dst)
                         dst.flush();
                         dst.close();
+
+                        // save bitmap as JSON
+                        val bmpjsonFilepath = "/" + timeStampString + "/" + timeStampString + "_hit_bmp.json"
+                        val mapper = jacksonObjectMapper()
+                        mapper.writeValue(File(bmpjsonFilepath), cropBitmap)
+
                         //--------------------------------------START---------------------------------------------------
                         //Copy to CamerPreviewCallbackNative
                         //Information to store in the folder <timeStampString> on the moment of detection
