@@ -134,8 +134,6 @@ class ConfigurationInfo (context: Context) {
             }
         }
 
-    val canUpload: Boolean
-        get() = isWifiConnected || (isConnected && !isWifiOnly)
 
     var isDetectionOn : Boolean
         get() {
@@ -159,7 +157,7 @@ class ConfigurationInfo (context: Context) {
 
     }
 
-    fun getConfigurationData(): ConfigurationData = ConfigurationData(isChargerOnly, isWifiOnly, isCharging, canProcess, isConnected, isWifiConnected, canUpload)
+//    fun getConfigurationData(): ConfigurationData = ConfigurationData(isChargerOnly, isWifiOnly, isCharging, canProcess, isConnected, isWifiConnected, canUpload)
 
     companion object {
         fun parseIntPref(context: Context, name: String, defVal: Int) : Int {

@@ -4,6 +4,7 @@ import android.app.DownloadManager
 import android.content.Context
 import android.database.Cursor
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.hardware.Camera
 import android.net.Uri
 import android.os.Environment
@@ -12,12 +13,10 @@ import android.util.Log
 import android.widget.Toast
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.instacart.library.truetime.TrueTime
-import org.acra.ACRA.init
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.uiThread
 import science.credo.mobiledetector.CredoApplication
-import science.credo.mobiledetector.MainActivity
 import science.credo.mobiledetector.database.ConfigurationWrapper
 import science.credo.mobiledetector.database.DataManager
 import science.credo.mobiledetector.database.DetectionStateWrapper
@@ -25,7 +24,6 @@ import science.credo.mobiledetector.info.ConfigurationInfo
 import science.credo.mobiledetector.info.LocationInfo
 import science.credo.mobiledetector.network.ServerInterface
 import java.io.*
-import java.nio.channels.FileChannel
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -164,38 +162,6 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         val dataString = Base64.encodeToString(cropDataPNG, Base64.DEFAULT)
                         val location = mLocationInfo.getLocationData()
 
-                        val timeStampString = timestamp.toString()
-                        val directory = File(Environment.DIRECTORY_DOWNLOADS)
-                        if (!directory.exists()) {
-                            directory.mkdirs()
-                        }
-
-                        val filepath = "/" + timeStampString + "/" + timeStampString + "_hit.png"
-                        val file = File(directory, filepath)
-                        val dst: FileOutputStream = FileOutputStream(file)
-                        cropBitmap.compress(Bitmap.CompressFormat.PNG, 100, dst)
-                        dst.flush();
-                        dst.close();
-
-                        // save bitmap as JSON
-                        val bmpjsonFilepath = "/" + timeStampString + "/" + timeStampString + "_hit_bmp.json"
-                        val mapper = jacksonObjectMapper()
-                        mapper.writeValue(File(bmpjsonFilepath), cropBitmap)
-
-                        //--------------------------------------START---------------------------------------------------
-                        //Copy to CamerPreviewCallbackNative
-                        //Information to store in the folder <timeStampString> on the moment of detection
-                        retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/images/planetary-k-index.gif", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/images/swx-overview-large.gif", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/text/solar-geophysical-event-reports.txt", timeStampString)
-                        retreiveInformation("https://services.swpc.noaa.gov/text/daily-geomagnetic-indices.txt", timeStampString)
-                        //--------------------------------------END-----------------------------------------------------
-                        //Copy to CamerPreviewCallbackNative
-
-
                         val hit = Hit(
                                 dataString,
                                 timestamp,
@@ -222,6 +188,102 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         hits.add(hit)
 
                         fillHited(data, width, offsetX, offsetY, endX, endY)
+                        val timeStampString = timestamp.toString()
+                        Log.i("Hit-Detected", timeStampString)
+
+
+                        try {
+                            //Copy to CamerPreviewCallbackNative
+                            //Information to store in the folder <timeStampString> on the moment of detection
+                            retreiveInformation("https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg", timeStampString)
+                            retreiveInformation("https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png", timeStampString)
+                            retreiveInformation("https://services.swpc.noaa.gov/images/planetary-k-index.gif", timeStampString)
+                            retreiveInformation("https://services.swpc.noaa.gov/images/swx-overview-large.gif", timeStampString)
+                            retreiveInformation("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt", timeStampString)
+                            retreiveInformation("https://services.swpc.noaa.gov/text/solar-geophysical-event-reports.txt", timeStampString)
+                            retreiveInformation("https://services.swpc.noaa.gov/text/daily-geomagnetic-indices.txt", timeStampString)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+
+
+                        try {
+                            // Store Hit-Bitmap onto device
+                            val directory = File(
+                                Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_DOWNLOADS
+                                ), timeStampString
+                            )
+                            if (!directory.exists()) {
+                                directory.mkdirs()
+                            }
+
+                            //save bitmap as PNG
+                            val filepath = "/" + timeStampString + "_hit.png"
+                            val file = File(directory, filepath)
+                            val dst: FileOutputStream = FileOutputStream(file)
+                            cropBitmap.compress(Bitmap.CompressFormat.PNG, 100, dst)
+                            dst.flush();
+                            dst.close();
+
+                            // save bitmap as JSON
+                            val bmpjsonFilepath = "/" + timeStampString + "_hit_bmp.json"
+                            val mapper = jacksonObjectMapper()
+                            val filebmp = File(directory,bmpjsonFilepath)
+                            mapper.writeValue(filebmp, cropBitmap)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+                        try {
+                            val epsilon = 20;
+                            var pxTxt = ""
+                            var mrngpx = ""
+                            var mrngcl = ""
+                            var rgbPx = ""
+                            for (x in 0 until cropBitmap.getWidth()) {
+                                for (y in 0 until cropBitmap.getHeight()) {
+                                    var px = cropBitmap.getPixel(x, y)
+                                    pxTxt = pxTxt + px
+                                    mrngpx = mrngpx + (px%2)
+                                    var red = Color.red(px)
+                                    var green = Color.green(px)
+                                    var blue = Color.blue(px)
+                                    var alpha = Color.alpha(px)
+                                    if (red > epsilon || green > epsilon || blue > epsilon) {
+                                        rgbPx = rgbPx + red + ";" + green + ";" + blue + ";" + alpha + ";" + x +";" + y + "\n"
+                                    }
+
+                                }
+                            }
+//                            Log.e("MRNG-RGBRaw-YYY:"+timeStampString,"CenterXY:" + centerX + ":" + centerY + ";"  + rgbPx)
+
+                            // Write MRNG data to file
+                            try {
+                                val directory = File(
+                                    Environment.getExternalStoragePublicDirectory(
+                                        Environment.DIRECTORY_DOWNLOADS
+                                    ), timeStampString
+                                )
+                                if (!directory.exists()) {
+                                    directory.mkdirs()
+                                }
+                                val mrngFile = "/" + timeStampString + "_mrng.txt"
+                                val myfile = File(directory,mrngFile)
+
+                                myfile.printWriter().use { out ->
+                                    out.println("CenterXY:" + centerX + ";" + centerY)
+                                    out.println(rgbPx)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+
                     } else {
                         break
                     }
@@ -248,12 +310,6 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                     } catch (e: Exception) {
                         Log.e(TAG, "Can't store hit", e)
                     }
-                }
-                // FIXME: in separated service because "send and check as toSend=false" should be atomic
-                try {
-                    mDataManager.sendHitsToNetwork(mServerInterface)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Can't sent hit to server", e)
                 }
                 mDataManager.closeDb()
             }
