@@ -191,7 +191,6 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         val timeStampString = timestamp.toString()
                         Log.i("Hit-Detected", timeStampString)
 
-
                         try {
                             //Copy to CamerPreviewCallbackNative
                             //Information to store in the folder <timeStampString> on the moment of detection
@@ -205,8 +204,6 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
-
-
 
                         try {
                             // Store Hit-Bitmap onto device
@@ -237,11 +234,12 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         }
 
                         try {
-                            val epsilon = 20;
+                            val epsilon = 21;
                             var pxTxt = ""
                             var mrngpx = ""
                             var mrngcl = ""
                             var rgbPx = ""
+                            var mrng3 = ""
                             for (x in 0 until cropBitmap.getWidth()) {
                                 for (y in 0 until cropBitmap.getHeight()) {
                                     var px = cropBitmap.getPixel(x, y)
@@ -253,11 +251,11 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                                     var alpha = Color.alpha(px)
                                     if (red > epsilon || green > epsilon || blue > epsilon) {
                                         rgbPx = rgbPx + red + ";" + green + ";" + blue + ";" + alpha + ";" + x +";" + y + "\n"
+                                        mrng3 = mrng3 + ((red%2) + (green%2) + (blue%2))%2
                                     }
 
                                 }
                             }
-//                            Log.e("MRNG-RGBRaw-YYY:"+timeStampString,"CenterXY:" + centerX + ":" + centerY + ";"  + rgbPx)
 
                             // Write MRNG data to file
                             try {
@@ -272,8 +270,13 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                                 val mrngFile = "/" + timeStampString + "_mrng.txt"
                                 val myfile = File(directory,mrngFile)
 
+                                val mrng1 = timeStampString.subSequence(timeStampString.length-4,timeStampString.length).toString().toInt()
+                                val mrng2 = (centerX%2).toString() + (centerY%2).toString()
+
                                 myfile.printWriter().use { out ->
-                                    out.println("CenterXY:" + centerX + ";" + centerY)
+                                    out.println(Integer.toBinaryString(mrng1).toString() + mrng2 + mrng3)
+                                    out.println(timeStampString)
+                                    out.println("" + centerX + ";" + centerY)
                                     out.println(rgbPx)
                                 }
                             } catch (e: Exception) {
