@@ -24,6 +24,7 @@ import science.credo.mobiledetector.info.ConfigurationInfo
 import science.credo.mobiledetector.info.LocationInfo
 import science.credo.mobiledetector.network.ServerInterface
 import java.io.*
+import java.nio.channels.FileChannel
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -162,35 +163,11 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         val dataString = Base64.encodeToString(cropDataPNG, Base64.DEFAULT)
                         val location = mLocationInfo.getLocationData()
 
-                        val hit = Hit(
-                                dataString,
-                                timestamp,
-                                location.latitude,
-                                location.longitude,
-                                location.altitude,
-                                location.accuracy,
-                                location.provider,
-                                width,
-                                height,
-                                centerX,
-                                centerY,
-                                max,
-                                average,
-                                blacks,
-                                config.blackFactor,
-                                sensorsState.accX,
-                                sensorsState.accY,
-                                sensorsState.accZ,
-                                sensorsState.orientation,
-                                sensorsState.temperature,
-                                trueTime
-                        )
-                        hits.add(hit)
+
 
                         fillHited(data, width, offsetX, offsetY, endX, endY)
                         val timeStampString = timestamp.toString()
                         Log.i("Hit-Detected", timeStampString)
-
                         try {
                             //Copy to CamerPreviewCallbackNative
                             //Information to store in the folder <timeStampString> on the moment of detection
@@ -233,58 +210,103 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                             e.printStackTrace()
                         }
 
-                        try {
-                            val epsilon = 21;
-                            var pxTxt = ""
-                            var mrngpx = ""
-                            var mrngcl = ""
-                            var rgbPx = ""
-                            var mrng3 = ""
-                            for (x in 0 until cropBitmap.getWidth()) {
-                                for (y in 0 until cropBitmap.getHeight()) {
-                                    var px = cropBitmap.getPixel(x, y)
-                                    pxTxt = pxTxt + px
-                                    mrngpx = mrngpx + (px%2)
-                                    var red = Color.red(px)
-                                    var green = Color.green(px)
-                                    var blue = Color.blue(px)
-                                    var alpha = Color.alpha(px)
-                                    if (red > epsilon || green > epsilon || blue > epsilon) {
-                                        rgbPx = rgbPx + red + ";" + green + ";" + blue + ";" + alpha + ";" + x +";" + y + "\n"
-                                        mrng3 = mrng3 + ((red%2) + (green%2) + (blue%2))%2
-                                    }
 
+
+                        val epsilon = 21;
+                        var pxTxt = ""
+                        var mrngpx = ""
+                        var rgbPx = ""
+                        var potPixelError = false
+
+                        val mrngRawP1Time = timeStampString.subSequence(timeStampString.length-5,timeStampString.length).toString().toInt()
+                        val mrngP1Time = Integer.toBinaryString(mrngRawP1Time).toString()
+
+                        val mrngRawP2Position = centerX.toString() + "," + centerY.toString()
+                        val mrngP2Position = (centerX%2).toString() + (centerY%2).toString()
+
+                        var mrngP3Color = ""
+                        var mrngRawP3Color = ""
+
+                        // Extract Randomness out of bit flipped pixels
+                        for (x in 0 until cropBitmap.getWidth()) {
+                            for (y in 0 until cropBitmap.getHeight()) {
+                                var px = cropBitmap.getPixel(x, y)
+                                pxTxt = pxTxt + px
+                                mrngpx = mrngpx + (px%2)
+                                var red = Color.red(px)
+                                var green = Color.green(px)
+                                var blue = Color.blue(px)
+                                var alpha = Color.alpha(px)
+                                if (red > epsilon || green > epsilon || blue > epsilon) {
+                                    rgbPx = rgbPx + red + ";" + green + ";" + blue + ";" + alpha + ";" + x +";" + y + "\n"
+                                    mrngRawP3Color = mrngRawP3Color + red + ";" + green + ";" + blue + ";" + alpha + ";" + x +";" + y +";\n"
+                                    mrngP3Color = mrngP3Color + ((red%2) + (green%2) + (blue%2))%2
                                 }
+
                             }
+                        }
+                        val mrngBitString = mrngP1Time + mrngP2Position + mrngP3Color
+                        if (mrngP3Color.length<=2)
+                            potPixelError = true
 
-                            // Write MRNG data to file
-                            try {
-                                val directory = File(
-                                    Environment.getExternalStoragePublicDirectory(
-                                        Environment.DIRECTORY_DOWNLOADS
-                                    ), timeStampString
-                                )
-                                if (!directory.exists()) {
-                                    directory.mkdirs()
-                                }
-                                val mrngFile = "/" + timeStampString + "_mrng.txt"
-                                val myfile = File(directory,mrngFile)
+                        val hit = Hit(
+                            dataString,
+                            timestamp,
+                            location.latitude,
+                            location.longitude,
+                            location.altitude,
+                            location.accuracy,
+                            location.provider,
+                            width,
+                            height,
+                            centerX,
+                            centerY,
+                            max,
+                            average,
+                            blacks,
+                            config.blackFactor,
+                            sensorsState.accX,
+                            sensorsState.accY,
+                            sensorsState.accZ,
+                            sensorsState.orientation,
+                            sensorsState.temperature,
+                            trueTime,
+                            mrngRawP1Time,
+                            mrngRawP2Position,
+                            mrngRawP3Color,
+                            mrngP1Time,
+                            mrngP2Position,
+                            mrngP3Color,
+                            mrngBitString,
+                            potPixelError
+                        )
+                        hits.add(hit)
 
-                                val mrng1 = timeStampString.subSequence(timeStampString.length-4,timeStampString.length).toString().toInt()
-                                val mrng2 = (centerX%2).toString() + (centerY%2).toString()
 
-                                myfile.printWriter().use { out ->
-                                    out.println(Integer.toBinaryString(mrng1).toString() + mrng2 + mrng3)
-                                    out.println(timeStampString)
-                                    out.println("" + centerX + ";" + centerY)
-                                    out.println(rgbPx)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                        // Write MRNG data to file
+                        try {
+                            val directory = File(
+                                Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_DOWNLOADS
+                                ), timeStampString
+                            )
+                            if (!directory.exists()) {
+                                directory.mkdirs()
+                            }
+                            val mrngFile = "/" + timeStampString + "_mrng.txt"
+                            val myfile = File(directory,mrngFile)
+
+                            myfile.printWriter().use { out ->
+                                out.println(mrngBitString)
+                                out.println(timeStampString)
+                                out.println("" + centerX + ";" + centerY)
+                                out.println(rgbPx)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
+
+
 
 
                     } else {
@@ -315,7 +337,9 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                     }
                 }
                 mDataManager.closeDb()
+                backupDb()
             }
+
 
             var bc = benchmarkCount.addAndGet(1)
             var bs = benchmarkSumMs.addAndGet((System.currentTimeMillis() - benchmarkStart).toInt())
@@ -466,6 +490,44 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
             for (j in offsetX until endX) {
                 data[i * width + j] = 0
             }
+        }
+    }
+
+    fun backupDb() {
+        val db = DataManager.getDefault(mContext)
+        try {
+            val sd = File(
+                Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS
+                ), "backup_db"
+            )
+            val data = db.mAppPath
+            var bool = false
+            if(!sd.exists()) {
+                sd.mkdir()
+            }
+            if (sd.canWrite()) {
+                val currentDBPath = "cache.db"
+                val backupDBPath = "backup_db.txt"
+                val currentDB = File(data, currentDBPath)
+                val backupDB = File(sd, backupDBPath)
+                if (currentDB.exists()) {
+                    val src: FileChannel = FileInputStream(currentDB).getChannel()
+                    val dst: FileChannel = FileOutputStream(backupDB).channel
+                    dst.transferFrom(src, 0, src.size())
+                    src.close()
+                    dst.close()
+                    bool = true
+                }
+                if (bool === true) {
+                    mContext.runOnUiThread {
+                        Toast.makeText(this, "Backup Complete", Toast.LENGTH_SHORT).show()
+                    }
+                    bool = false
+                }
+            }
+        } catch (e: java.lang.Exception) {
+            Log.w("Automated Backup", e)
         }
     }
 }

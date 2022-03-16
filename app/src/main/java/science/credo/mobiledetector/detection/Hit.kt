@@ -33,7 +33,15 @@ class Hit (frameContent: String,
            az: Float,
            orientation: Float,
            temperature: Int,
-           trueTime: Long
+           trueTime: Long,
+           mrngRawP1Time: Int,
+           mrngRawP2Position: String,
+           mrngRawP3Color: String,
+           mrngP1Time: String,
+           mrngP2Position: String,
+           mrngP3Color: String,
+           mrngBitString: String,
+           potPixelError: Boolean?
            ){
     @PrimaryKey
     @AutoIncrement
@@ -107,5 +115,29 @@ class Hit (frameContent: String,
     @JsonIgnore
     val detectionTimestamp = (System.currentTimeMillis() / 10000L).toInt() // PultusORM less condition walkaround
 
-    constructor() : this("", 0, 0.0, 0.0, 0.0, 0.0f, "", 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0f, 0f, 0f, 0f, 0, 0) {}
+    @JsonIgnore
+    val mMrngRawP1Time: Int = mrngRawP1Time
+
+    @JsonIgnore
+    val mMrngRawP2Position: String = mrngRawP2Position
+
+    @JsonIgnore
+    val mMrngRawP3Color: String = mrngRawP3Color
+
+    @JsonIgnore
+    val mMrngP1Time: String = mrngP1Time
+
+    @JsonIgnore
+    val mMrngP2Position: String = mrngP2Position
+
+    @JsonIgnore
+    val mMrngP3Color: String = mrngP3Color
+
+    @JsonIgnore
+    val mMrngBitString: String = mrngBitString
+
+    @JsonIgnore
+    val mPotPixelError: Boolean? = potPixelError
+
+    constructor() : this("", 0, 0.0, 0.0, 0.0, 0.0f, "", 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0f, 0f, 0f, 0f, 0, 0,0 ,"" ,"" , "", "", "", "", null) {}
 }
