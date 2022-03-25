@@ -37,11 +37,19 @@ class Hit (frameContent: String,
            mrngRawP1Time: Int,
            mrngRawP2Position: String,
            mrngRawP3Color: String,
+           mrngRawP4Outlier: String,
            mrngP1Time: String,
            mrngP2Position: String,
            mrngP3Color: String,
+           mrngP4Outlier: String,
            mrngBitString: String,
-           potPixelError: Boolean?
+           potPixelError: Boolean?,
+           avgDistRed: Double,
+           avgDistGreen: Double,
+           avgDistBlue: Double,
+           medRed: Int,
+           medGreen: Int,
+           medBlue: Int
            ){
     @PrimaryKey
     @AutoIncrement
@@ -125,6 +133,9 @@ class Hit (frameContent: String,
     val mMrngRawP3Color: String = mrngRawP3Color
 
     @JsonIgnore
+    val mMrngRawP4Outlier: String = mrngRawP4Outlier
+
+    @JsonIgnore
     val mMrngP1Time: String = mrngP1Time
 
     @JsonIgnore
@@ -134,10 +145,31 @@ class Hit (frameContent: String,
     val mMrngP3Color: String = mrngP3Color
 
     @JsonIgnore
+    val mMrngP4Outlier: String = mrngP4Outlier
+
+    @JsonIgnore
     val mMrngBitString: String = mrngBitString
 
     @JsonIgnore
     val mPotPixelError: Boolean? = potPixelError
 
-    constructor() : this("", 0, 0.0, 0.0, 0.0, 0.0f, "", 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0f, 0f, 0f, 0f, 0, 0,0 ,"" ,"" , "", "", "", "", null) {}
+    @JsonIgnore
+    val mAvgDistRed: Double = avgDistRed
+
+    @JsonIgnore
+    val mAvgDistGreen: Double = avgDistGreen
+
+    @JsonIgnore
+    val mAvgDistBlue: Double = avgDistBlue
+
+    @JsonIgnore
+    val mMedRed: Int = medRed
+
+    @JsonIgnore
+    val mMedGreen: Int = medGreen
+
+    @JsonIgnore
+    val mMedBlue: Int = medBlue
+
+    constructor() : this("", 0, 0.0, 0.0, 0.0, 0.0f, "", 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0f, 0f, 0f, 0f, 0, 0,0 ,"" ,"" , "", "", "", "", "", "", null, 0.0, 0.0, 0.0,0,0,0) {}
 }

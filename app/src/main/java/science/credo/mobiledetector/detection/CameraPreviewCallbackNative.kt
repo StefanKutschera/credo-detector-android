@@ -27,8 +27,10 @@ import java.io.*
 import java.nio.channels.FileChannel
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.round
 
 const val MAX_HITS_ONE_FRAME = 5
 
@@ -213,8 +215,6 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
 
 
                         val epsilon = 21;
-                        var pxTxt = ""
-                        var mrngpx = ""
                         var rgbPx = ""
                         var potPixelError = false
 
@@ -227,12 +227,26 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                         var mrngP3Color = ""
                         var mrngRawP3Color = ""
 
+                        var mrngP4Outlier = ""
+                        var mrngRawP4Outlier = ""
+
+
+                        var prevRed = -1
+                        var prevGreen = -1
+                        var prevBlue = -1
+
+                        var absDistRed = 0
+                        var absDistGreen = 0
+                        var absDistBlue = 0
+
+                        var redArr : MutableList<Int> = ArrayList()
+                        var greenArr : MutableList<Int> = ArrayList()
+                        var blueArr : MutableList<Int> = ArrayList()
+
                         // Extract Randomness out of bit flipped pixels
                         for (x in 0 until cropBitmap.getWidth()) {
                             for (y in 0 until cropBitmap.getHeight()) {
                                 var px = cropBitmap.getPixel(x, y)
-                                pxTxt = pxTxt + px
-                                mrngpx = mrngpx + (px%2)
                                 var red = Color.red(px)
                                 var green = Color.green(px)
                                 var blue = Color.blue(px)
@@ -242,9 +256,68 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                                     mrngRawP3Color = mrngRawP3Color + red + ";" + green + ";" + blue + ";" + alpha + ";" + x +";" + y +";\n"
                                     mrngP3Color = mrngP3Color + ((red%2) + (green%2) + (blue%2))%2
                                 }
+                                if (prevRed > 0 || prevGreen > 0 || prevBlue > 0) {
+                                    absDistRed = absDistRed + abs(prevRed - red)
+                                    absDistGreen = absDistGreen + abs(prevGreen - green)
+                                    absDistBlue = absDistBlue + abs(prevBlue - blue)
+                                }
+                                redArr.add(red)
+                                greenArr.add(green)
+                                blueArr.add(blue)
 
+                                prevRed = red
+                                prevGreen = green
+                                prevBlue = blue
                             }
                         }
+
+                        redArr.sort()
+                        greenArr.sort()
+                        blueArr.sort()
+                        val medRed = redArr[round(redArr.size/2.toDouble()).toInt()]
+                        val medGreen = greenArr[round(redArr.size/2.toDouble()).toInt()]
+                        val medBlue = blueArr[round(redArr.size/2.toDouble()).toInt()]
+
+                        val pixelCount = cropBitmap.getWidth() * cropBitmap.getHeight()
+                        val avgDistRed = absDistRed / pixelCount.toDouble()
+                        val avgDistGreen = absDistGreen / pixelCount.toDouble()
+                        val avgDistBlue = absDistBlue / pixelCount.toDouble()
+                        val outlierMultiplier = 6
+
+                        var locDistRed = -1
+                        var locDistGreen = -1
+                        var locDistBlue = -1
+
+                        // 2nd Round Extract Outliers for Randomness out of bit flipped pixels
+                        for (x in 0 until cropBitmap.getWidth()) {
+                            for (y in 0 until cropBitmap.getHeight()) {
+                                var px = cropBitmap.getPixel(x, y)
+                                var red = Color.red(px)
+                                var green = Color.green(px)
+                                var blue = Color.blue(px)
+                                var alpha = Color.alpha(px)
+
+                                if (prevRed > 0 || prevGreen > 0 || prevBlue > 0) {
+                                    locDistRed = abs(prevRed - red)
+                                    locDistGreen = abs(prevGreen - green)
+                                    locDistBlue = abs(prevBlue - blue)
+                                }
+
+                                if (red > epsilon || green > epsilon || blue > epsilon) {
+                                    if (locDistRed > avgDistRed * outlierMultiplier || locDistGreen > avgDistGreen * outlierMultiplier || locDistBlue > avgDistBlue * outlierMultiplier) {
+                                        mrngRawP4Outlier =
+                                            mrngRawP4Outlier + red + ";" + green + ";" + blue + ";" + alpha + ";" + x + ";" + y + ";\n"
+                                        mrngP4Outlier =
+                                            mrngP4Outlier + ((red % 2) + (green % 2) + (blue % 2)) % 2
+                                    }
+                                }
+
+                                prevRed = red
+                                prevGreen = green
+                                prevBlue = blue
+                            }
+                        }
+
                         val mrngBitString = mrngP1Time + mrngP2Position + mrngP3Color
                         if (mrngP3Color.length<=2)
                             potPixelError = true
@@ -274,11 +347,19 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                             mrngRawP1Time,
                             mrngRawP2Position,
                             mrngRawP3Color,
+                            mrngRawP4Outlier,
                             mrngP1Time,
                             mrngP2Position,
                             mrngP3Color,
+                            mrngP4Outlier,
                             mrngBitString,
-                            potPixelError
+                            potPixelError,
+                            avgDistRed,
+                            avgDistGreen,
+                            avgDistBlue,
+                            medRed,
+                            medGreen,
+                            medBlue
                         )
                         hits.add(hit)
 
@@ -297,10 +378,23 @@ class CameraPreviewCallbackNative(private val mContext: Context) : Camera.Previe
                             val myfile = File(directory,mrngFile)
 
                             myfile.printWriter().use { out ->
+                                out.println("MRNG Sequence:")
                                 out.println(mrngBitString)
+                                out.println("Timestamp:")
                                 out.println(timeStampString)
+                                out.println("Abs. Position:")
                                 out.println("" + centerX + ";" + centerY)
                                 out.println(rgbPx)
+                                out.println("Outlier Stats:")
+                                out.println("avgDistRed:" +avgDistRed)
+                                out.println("avgDistGreen:" +avgDistGreen)
+                                out.println("avgDistBlue:" +avgDistBlue)
+                                out.println("medRed:" +medRed )
+                                out.println("medGreen:" +medGreen )
+                                out.println("medBlue:" +medBlue)
+                                out.println("Outlier:")
+                                out.println(mrngRawP4Outlier)
+                                out.println(mrngP4Outlier)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
